@@ -1,0 +1,30 @@
+{
+  "name": "whatsapp-social-bot",
+  "version": "1.0.0",
+  "description": "Sistema de automatización de contenido corporativo con WhatsApp Bot + IA",
+  "main": "index.js",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:mock": "cd frontend && npm run dev:mock",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:frontend:mock": "cd frontend && npm run dev:mock",
+    "dev:frontend:real": "cd frontend && npm run dev:real",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build", 
+    "build:frontend": "cd frontend && npm run build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "author": "Tu Nombre",
+  "license": "MIT"
+} 
