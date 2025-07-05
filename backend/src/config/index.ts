@@ -8,12 +8,9 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
 
-  // Supabase
-  supabase: {
-    url: process.env.SUPABASE_URL!,
-    anonKey: process.env.SUPABASE_ANON_KEY!,
-    serviceKey: process.env.SUPABASE_SERVICE_KEY!,
-    storageBucket: process.env.SUPABASE_STORAGE_BUCKET || 'whatsapp-media',
+  // Database (placeholder for your database provider)
+  database: {
+    url: process.env.DATABASE_URL || 'mongodb://localhost:27017/whatsapp_bot',
   },
 
   // WhatsApp
@@ -69,9 +66,7 @@ export const config = {
 
 // Validar variables de entorno críticas
 const requiredEnvVars = [
-  'SUPABASE_URL',
-  'SUPABASE_ANON_KEY',
-  'SUPABASE_SERVICE_KEY',
+  'DATABASE_URL',
   'JWT_SECRET',
   'OPENAI_API_KEY'
 ];

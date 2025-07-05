@@ -26,7 +26,8 @@
       "@/types/*": ["./src/schemas/types/*"],
       "@/entities/*": ["./src/schemas/entities/*"],
       "@/services/*": ["./src/services/*"],
-      "@/utils/*": ["./src/utils/*"]
+      "@/utils/*": ["./src/utils/*"],
+      "@/middlewares/*": ["./src/middlewares/*"]
     }
   },
   "include": [

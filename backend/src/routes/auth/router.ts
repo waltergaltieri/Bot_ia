@@ -3,8 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config';
 import { logger } from '../utils/logger';
-import { createError } from '../middlewares/error-handler';
-import { strictRateLimit } from '../middlewares/rate-limit';
+import { createError } from '../middleware/error-handler';
+import { strictRateLimit } from '../middleware/rate-limit';
 import UserService from '../services/UserService';
 import CompanyService from '../services/CompanyService';
 

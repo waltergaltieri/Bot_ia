@@ -4,8 +4,9 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { config } from './config';
 import { logger } from './utils/logger';
-import { errorHandler } from './middleware/error-handler';
-import { rateLimitMiddleware } from './middleware/rate-limit';
+import { errorHandler } from './middlewares/error-handler';
+import { rateLimitMiddleware } from './middlewares/rate-limit';
+import { connectDB } from './config/db/mongo-db';
 
 // Importar rutas
 import authRoutes from './routes/auth';
@@ -17,6 +18,9 @@ import metricsRoutes from './routes/metrics';
 import whatsappRoutes from './routes/whatsapp';
 
 const app = express();
+
+// Initialize database connection
+connectDB();
 
 // Middleware de seguridad
 app.use(helmet());

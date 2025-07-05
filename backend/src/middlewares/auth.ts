@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { supabase } from '../services/supabase';
 import { logger } from '../utils/logger';
+import UserService from '../services/UserService';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -27,16 +27,12 @@ export const authenticateToken = async (
       return;
     }
 
-    const decoded = jwt.verify(token, config.jwt.secret) as any;
+    const decoded = jwt.verify(token, config.jwt.secret as string) as any;
     
     // Verificar que el usuario existe en la base de datos
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, company_id, role')
-      .eq('id', decoded.userId)
-      .single();
+    const user = await UserService.findById(decoded.userId);
 
-    if (error || !user) {
+    if (!user) {
       res.status(401).json({ error: 'Token inválido' });
       return;
     }
