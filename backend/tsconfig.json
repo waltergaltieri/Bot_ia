@@ -23,7 +23,8 @@
     "emitDecoratorMetadata": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@/types/*": ["./src/types/*"],
+      "@/types/*": ["./src/schemas/types/*"],
+      "@/entities/*": ["./src/schemas/entities/*"],
       "@/services/*": ["./src/services/*"],
       "@/utils/*": ["./src/utils/*"]
     }
