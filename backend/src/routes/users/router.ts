@@ -1,5 +1,5 @@
 import express from 'express'
-import { requireAuth, AuthenticatedRequest } from '../middleware/auth'
+import { requireAuth, AuthenticatedRequest } from '../../middlewares/auth'
 
 const router = express.Router()
 
@@ -32,7 +32,8 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
     const { email, name, role } = req.body
     
     if (!email || !name || !role) {
-      return res.status(400).json({ error: 'Email, name, and role are required' })
+       res.status(400).json({ error: 'Email, name, and role are required' })
+        return
     }
     
     const newUser = {

@@ -1,5 +1,5 @@
 import express from 'express'
-import { requireAuth, AuthenticatedRequest } from '../middleware/auth'
+import { requireAuth, AuthenticatedRequest } from '../../middlewares/auth'
 
 const router = express.Router()
 
@@ -31,7 +31,8 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
     const { title, content } = req.body
     
     if (!title || !content) {
-      return res.status(400).json({ error: 'Title and content are required' })
+       res.status(400).json({ error: 'Title and content are required' })
+       return
     }
     
     const newPublication = {

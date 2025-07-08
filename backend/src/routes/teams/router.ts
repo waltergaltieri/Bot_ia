@@ -1,5 +1,5 @@
 import express from 'express'
-import { requireAuth, requireCompanyAccess, AuthenticatedRequest } from '@/middlewares/auth'
+import { requireAuth, requireCompanyAccess, AuthenticatedRequest } from '../../middlewares/auth'
 
 const router = express.Router()
 
@@ -31,7 +31,8 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
     const { name, managerId } = req.body
     
     if (!name) {
-      return res.status(400).json({ error: 'Team name is required' })
+      res.status(400).json({ error: 'Team name is required' })
+      return
     }
     
     const newTeam = {

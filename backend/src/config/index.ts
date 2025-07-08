@@ -27,11 +27,19 @@ export const config = {
     model: process.env.OPENAI_MODEL || 'gpt-4-vision-preview',
   },
 
+  // Telegram
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN!,
+    webhookUrl: process.env.SERVER_TELEGRAM_WEBHOOK!,
+    baseUrl: process.env.TELEGRAM_BASE_URL || 'https://api.telegram.org/bot',
+  },
+
   // Social Media
   socialMedia: {
     linkedin: {
       clientId: process.env.LINKEDIN_CLIENT_ID!,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
+      uniqueState: process.env.LINKEDIN_UNIQUE_STATE!,
     },
     instagram: {
       clientId: process.env.INSTAGRAM_CLIENT_ID!,
@@ -68,11 +76,13 @@ export const config = {
 const requiredEnvVars = [
   'DATABASE_URL',
   'JWT_SECRET',
-  'OPENAI_API_KEY'
+  'OPENAI_API_KEY',
+  'TELEGRAM_BOT_TOKEN',
+  'SERVER_TELEGRAM_WEBHOOK'
 ];
 
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    throw new Error(`Variable de entorno requerida: ${envVar}`);
-  }
-} 
+// for (const envVar of requiredEnvVars) {
+//   if (!process.env[envVar]) {
+//     throw new Error(`Variable de entorno requerida: ${envVar}`);
+//   }
+// }

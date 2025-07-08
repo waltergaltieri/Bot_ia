@@ -1,5 +1,5 @@
 import express from 'express'
-import { requireAuth, requireSuperAdmin } from '../middleware/auth'
+import { requireAuth, requireSuperAdmin } from '../../middlewares/auth'
 
 const router = express.Router()
 
@@ -35,7 +35,8 @@ router.post('/', requireAuth, requireSuperAdmin, async (req, res) => {
     
     // Validaciones básicas
     if (!name || !email) {
-      return res.status(400).json({ error: 'Name and email are required' })
+      res.status(400).json({ error: 'Name and email are required' })
+      return
     }
     
     // Mock response - en producción sería una inserción en la base de datos

@@ -1,5 +1,6 @@
 import express from 'express'
-import { requireAuth, AuthenticatedRequest } from '../middleware/auth'
+import { requireAuth, AuthenticatedRequest } from '../../middlewares/auth'
+import axios from 'axios'
 
 const router = express.Router()
 
@@ -26,7 +27,8 @@ router.post('/send', requireAuth, async (req: AuthenticatedRequest, res) => {
     const { to, message } = req.body
     
     if (!to || !message) {
-      return res.status(400).json({ error: 'To and message are required' })
+      res.status(400).json({ error: 'To and message are required' })
+      return
     }
     
     // Mock response - en producción sería una llamada a la API de WhatsApp
@@ -44,5 +46,6 @@ router.post('/send', requireAuth, async (req: AuthenticatedRequest, res) => {
     res.status(500).json({ error: 'Error sending message' })
   }
 })
+
 
 export default router 
