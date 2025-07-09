@@ -18,7 +18,8 @@ import whatsappRoutes from "./routes/whatsapp";
 import whatsappWebhookRoutes from "./routes/whatsapp-webhook";
 import linkedinRoutes from "./routes/linkedin";
 import { createTelegramRouter } from "./routes/telegram/router";
-import { TelegramModel } from "./models/models/telegram/telegram-model";
+import { createLinkedInRouter } from "./routes";
+import { LinkedInModel, TelegramModel } from "./models";
 
 const app = express();
 
@@ -69,7 +70,7 @@ app.use("/api/metrics", metricsRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/whatsapp-webhook", whatsappWebhookRoutes);
 app.use("/api/telegram", createTelegramRouter({ telegramModel: new TelegramModel() }));
-app.use("/api/linkedin", linkedinRoutes);
+app.use("/api/linkedin", createLinkedInRouter({ linkedInModel: new LinkedInModel() }));
 
 // 404 handler
 app.use("*", (req, res) => {

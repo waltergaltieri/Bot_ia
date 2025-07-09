@@ -1,7 +1,7 @@
 import { IncommingMessage, ITelegramModel, SendMessageConfig } from "../../interfaces/i_telegram_model";
 import { config } from "../../../config";
 import { logger } from "../../../utils/logger";
-import { Result, ok, fail, getLinkedInAuthUrl } from "../../../utils";
+import { Result, success, fail, getLinkedInAuthUrl } from "../../../utils";
 import axios from "axios";
 
 export class TelegramModel implements ITelegramModel {
@@ -24,7 +24,7 @@ export class TelegramModel implements ITelegramModel {
         text,
       });
       logger.info(`Mensaje enviado a chat ${chatId}: ${text}`);
-      return ok(response.data);
+      return success(response.data);
     } catch (error: any) {
       logger.error("Error enviando mensaje de Telegram:", error.response?.data || error.message);
       return fail(error.response?.data || error.message);
@@ -40,7 +40,7 @@ export class TelegramModel implements ITelegramModel {
         ...options,
       });
       logger.info(`Webhook de Telegram configurado: ${url}`);
-      return ok(response.data);
+      return success(response.data);
     } catch (error: any) {
       logger.error("Error configurando webhook de Telegram:", error.response?.data || error.message);
       return fail(error.response?.data || error.message);
@@ -53,7 +53,7 @@ export class TelegramModel implements ITelegramModel {
       logger.info("Información del webhook obtenida exitosamente", {
         result: response.data,
       });
-      return ok(response.data);
+      return success(response.data);
     } catch (error: any) {
       logger.error("Error obteniendo información del webhook:", error.response?.data || error.message);
       return fail(error.response?.data || error.message);
@@ -64,7 +64,7 @@ export class TelegramModel implements ITelegramModel {
     try {
       const response = await axios.post(`${this.baseUrl}/deleteWebhook`);
       logger.info("Webhook de Telegram eliminado");
-      return ok(response.data);
+      return success(response.data);
     } catch (error: any) {
       logger.error("Error eliminando webhook de Telegram:", error.response?.data || error.message);
       return fail(error.response?.data || error.message);
@@ -77,7 +77,7 @@ export class TelegramModel implements ITelegramModel {
       logger.info("Información del bot obtenida exitosamente", {
         result: response.data,
       });
-      return ok(response.data);
+      return success(response.data);
     } catch (error: any) {
       logger.error("Error obteniendo información del bot:", error.response?.data || error.message);
       return fail(error.response?.data || error.message);
@@ -90,7 +90,7 @@ export class TelegramModel implements ITelegramModel {
         chat_id: chatId,
         action,
       });
-      return ok(response.data);
+      return success(response.data);
     } catch (error: any) {
       logger.error("Error enviando acción de chat:", error.response?.data || error.message);
       return fail(error.response?.data || error.message);
@@ -110,7 +110,7 @@ export class TelegramModel implements ITelegramModel {
         }
       }
 
-      return ok("No se procesó ningún comando específico.");
+      return success("No se procesó ningún comando específico.");
     } catch (error: any) {
       logger.error("Error procesando webhook de Telegram:", error);
       return fail(error.message);
@@ -120,6 +120,6 @@ export class TelegramModel implements ITelegramModel {
   private async onLinkedinCommand(chatId: string): Promise<Result<any, string>> {
     const authUrl = getLinkedInAuthUrl();
     await this.sendMessage({ chatId, text: `Para autenticarte en LinkedIn, visita el siguiente enlace: ${authUrl}` });
-    return ok({ success: true, message: "Comando /linkedin procesado." });
+    return success({ success: true, message: "Comando /linkedin procesado." });
   }
 }
