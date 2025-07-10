@@ -1,88 +1,72 @@
-import dotenv from 'dotenv';
 
-dotenv.config();
+import { envs } from './envirioment/env-vars';
 
 export const config = {
   // General
-  nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '3000', 10),
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
+  nodeEnv: envs.NODE_ENV,
+  port: envs.PORT,
+  frontendUrl: 'http://localhost:3001', // No está en env-vars, valor por defecto
 
   // Database (placeholder for your database provider)
   database: {
-    url: process.env.DATABASE_URL || 'mongodb://localhost:27017/whatsapp_bot',
+    url: 'mongodb://localhost:27017/whatsapp_bot', // No está en env-vars, valor por defecto
   },
 
   // WhatsApp
   whatsapp: {
-    token: process.env.WHATSAPP_TOKEN!,
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
-    webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN!,
-    webhookSecret: process.env.WHATSAPP_WEBHOOK_SECRET!,
+    token: envs.FACEBOOK_ACCESS_TOKEN, // Usando el token de Facebook/WhatsApp
+    phoneNumberId: envs.WHATSAPP_PHONE_NUMBER_ID,
+    webhookVerifyToken: envs.WHTASAPP_WEBHOOK_VERIFICATION_TOKEN,
+    webhookSecret: '', // No está en env-vars
   },
 
   // OpenAI
   openai: {
-    apiKey: process.env.OPENAI_API_KEY!,
-    model: process.env.OPENAI_MODEL || 'gpt-4-vision-preview',
+    apiKey: envs.OPENAI_API_KEY,
+    model: 'gpt-4-vision-preview', // No está en env-vars
   },
 
   // Telegram
   telegram: {
-    botToken: process.env.TELEGRAM_BOT_TOKEN!,
-    webhookUrl: process.env.SERVER_TELEGRAM_WEBHOOK!,
-    baseUrl: process.env.TELEGRAM_BASE_URL || 'https://api.telegram.org/bot',
+    botToken: envs.TELEGRAM_BOT_TOKEN,
+    webhookUrl: envs.SERVER_TELEGRAM_WEBHOOK,
+    baseUrl: envs.TELEGRAM_BASE_URL,
   },
 
   // Social Media
   socialMedia: {
     linkedin: {
-      clientId: process.env.LINKEDIN_CLIENT_ID!,
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-      uniqueState: process.env.LINKEDIN_UNIQUE_STATE!,
+      clientId: envs.LINKEDIN_CLIENT_ID,
+      clientSecret: envs.LINKEDIN_CLIENT_SECRET,
+      uniqueState: envs.LINKEDIN_UNIQUE_STATE,
     },
     instagram: {
-      clientId: process.env.INSTAGRAM_CLIENT_ID!,
-      clientSecret: process.env.INSTAGRAM_CLIENT_SECRET!,
+      clientId: '', // No está en env-vars
+      clientSecret: '', // No está en env-vars
     },
     tiktok: {
-      clientId: process.env.TIKTOK_CLIENT_ID!,
-      clientSecret: process.env.TIKTOK_CLIENT_SECRET!,
+      clientId: '', // No está en env-vars
+      clientSecret: '', // No está en env-vars
     },
   },
 
   // Redis
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    url: 'redis://localhost:6379', // No está en env-vars
   },
 
   // JWT
   jwt: {
-    secret: process.env.JWT_SECRET!,
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    secret: envs.JWT_SEED,
+    expiresIn: '7d', // No está en env-vars
   },
 
   // Rate Limiting
   rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+    windowMs: 900000, // No está en env-vars
+    maxRequests: 100, // No está en env-vars
   },
 
   // Logging
   logLevel: process.env.LOG_LEVEL || 'info',
 };
-
-// Validar variables de entorno críticas
-const requiredEnvVars = [
-  'DATABASE_URL',
-  'JWT_SECRET',
-  'OPENAI_API_KEY',
-  'TELEGRAM_BOT_TOKEN',
-  'SERVER_TELEGRAM_WEBHOOK'
-];
-
-// for (const envVar of requiredEnvVars) {
-//   if (!process.env[envVar]) {
-//     throw new Error(`Variable de entorno requerida: ${envVar}`);
-//   }
-// }
