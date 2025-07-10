@@ -16,7 +16,6 @@ import publicationsRoutes from "./routes/publications";
 import metricsRoutes from "./routes/metrics";
 import whatsappRoutes from "./routes/whatsapp";
 import whatsappWebhookRoutes from "./routes/whatsapp-webhook";
-import linkedinRoutes from "./routes/linkedin";
 import { createTelegramRouter } from "./routes/telegram/router";
 import { createLinkedInRouter } from "./routes";
 import { LinkedInModel, TelegramModel } from "./models";

@@ -31,11 +31,6 @@ export class LinkedInController {
       }
 
       sendOk(res, profileResult.data, "Autenticación exitosa");
-
-      res.status(200).json({
-        message: "Autenticación exitosa",
-        profile: profileResult.data,
-      });
     } catch (error) {
       sendInternalServerError(res, "Error durante la autenticación de LinkedIn", error);
     }

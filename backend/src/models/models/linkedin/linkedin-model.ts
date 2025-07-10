@@ -8,12 +8,12 @@ export interface LinkedInConfig {
 }
 
 export class LinkedInModel implements IOAuth {
-  async authenticate({ config }: OAuthOf<LinkedInConfig>): Promise<Result<OAuthProfile<any>, string>> {
+  async authenticate({ config }: OAuthOf<LinkedInConfig>): Promise<Result<OAuthProfile<LinkedInProfile>, string>> {
     const accessTokenResult = await this.getAccesToken(config.code);
 
     if (isFailure(accessTokenResult)) return accessTokenResult;
-
-    return await this.getProfile(accessTokenResult.data);
+    const profileResult = await this.getProfile(accessTokenResult.data);
+    return profileResult;
   }
 
   private async getAccesToken(code: string): Promise<Result<string, string>> {
@@ -22,7 +22,7 @@ export class LinkedInModel implements IOAuth {
         params: {
           grant_type: "authorization_code",
           code: code,
-          redirect_uri: "https://f53hh0d1-3000.uks1.devtunnels.ms/api/linkedin/auth",
+          redirect_uri: "https://app.otakudistrict.com/api/linkedin/auth",
           client_id: "77gb0ro5raeet3",
           client_secret: "WPL_AP1.jhOIJBTqmBZzwmlD.nuf+ZA==",
         },
