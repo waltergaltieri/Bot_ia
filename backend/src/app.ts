@@ -15,10 +15,10 @@ import usersRoutes from "./routes/users";
 import publicationsRoutes from "./routes/publications";
 import metricsRoutes from "./routes/metrics";
 import whatsappRoutes from "./routes/whatsapp";
-import whatsappWebhookRoutes from "./routes/whatsapp-webhook";
+
 import { createTelegramRouter } from "./routes/telegram/router";
-import { createLinkedInRouter } from "./routes";
-import { LinkedInModel, TelegramModel } from "./models";
+import { createLinkedInRouter, createWhatsappWebhookRouter } from "./routes";
+import { LinkedInModel, TelegramModel, WhatsAppModel } from "./models";
 
 const app = express();
 
@@ -51,11 +51,11 @@ app.use((req, res, next) => {
 });
 
 // Health check
-app.get('/alive', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+app.get("/alive", (req, res) => {
+  res.status(200).json({
+    status: "OK",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
@@ -67,7 +67,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/publications", publicationsRoutes);
 app.use("/api/metrics", metricsRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
-app.use("/api/whatsapp-webhook", whatsappWebhookRoutes);
+app.use("/api/whatsapp-webhook", createWhatsappWebhookRouter({ whatsappModel: new WhatsAppModel() }));
 app.use("/api/telegram", createTelegramRouter({ telegramModel: new TelegramModel() }));
 app.use("/api/linkedin", createLinkedInRouter({ linkedInModel: new LinkedInModel() }));
 

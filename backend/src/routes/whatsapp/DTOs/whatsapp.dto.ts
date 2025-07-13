@@ -10,8 +10,9 @@ export interface WhatsAppMessageDTO {
 }
 
 export interface SendWhatsAppMessageRequestDTO {
-  phoneNumber: string;
   message: string;
+  to: string;
+  replyToMessageId?: string;
 }
 
 export interface SendWhatsAppMessageResponseDTO {

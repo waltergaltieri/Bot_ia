@@ -1,20 +1,25 @@
-import { IncommingMessage, ITelegramModel, SendMessageConfig } from "../../interfaces/i_telegram_model";
+import { IncommingMessage, ITelegramModel, SendMessageConfig } from "../../interfaces/i-telegram-model";
 import { config } from "../../../config";
 import { logger } from "../../../utils/logger";
 import { Result, success, fail, getLinkedInAuthUrl } from "../../../utils";
 import axios from "axios";
+import { LinkedInModel } from '../linkedin/linkedin-model';
+import { ILinkedInModel } from "../../interfaces/i-linkedin-model";
 
 export class TelegramModel implements ITelegramModel {
   private baseUrl: string;
   private botToken: string;
+  private linkedInModel: ILinkedInModel;
 
   constructor() {
     this.botToken = config.telegram.botToken;
     this.baseUrl = `${config.telegram.baseUrl}${this.botToken}`;
+    this.linkedInModel = new LinkedInModel();
   }
 
   telegramCommands = {
     "/linkedin": (chatId: string) => this.onLinkedinCommand(chatId),
+    "/copy": () => this.publicCopy(),
   }
 
   async sendMessage({ chatId, text }: SendMessageConfig): Promise<Result<any, string>> {
@@ -121,5 +126,15 @@ export class TelegramModel implements ITelegramModel {
     const authUrl = getLinkedInAuthUrl();
     await this.sendMessage({ chatId, text: `Para autenticarte en LinkedIn, visita el siguiente enlace: ${authUrl}` });
     return success({ success: true, message: "Comando /linkedin procesado." });
+  }
+
+  private async publicCopy(): Promise<Result<any, string>> {
+    try {
+      await this.linkedInModel.publicCopy();
+      return success("Publicación en LinkedIn realizada exitosamente.");
+    } catch (error: any) {
+      logger.error("Error al realizar publicación en LinkedIn:", error);
+      return fail(error.message, "Error al publicar en LinkedIn");
+    }
   }
 }

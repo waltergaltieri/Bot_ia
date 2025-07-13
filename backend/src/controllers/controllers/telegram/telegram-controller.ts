@@ -1,7 +1,7 @@
 import { config } from "../../../config";
 import { Request, Response } from "express";
-import { ITelegram } from "../../interfaces/i_telegram";
-import { ITelegramModel } from "../../../models/interfaces/i_telegram_model";
+import { ITelegram } from "../../interfaces/i-telegram";
+import { ITelegramModel } from "../../../models/interfaces/i-telegram-model";
 import { logger } from "../../../utils/logger";
 
 export class TelegramController implements ITelegram {

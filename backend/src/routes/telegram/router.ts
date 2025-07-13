@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ITelegramModel } from '../../models/interfaces/i_telegram_model';
+import { ITelegramModel } from '../../models/interfaces/i-telegram-model';
 import { TelegramController } from '../../controllers/controllers/telegram/telegram-controller';
 
 export interface ITelegramRouter {

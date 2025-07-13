@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { Response } from "express";
 
 // Types for better type safety
 interface ApiResponse<T = any> {
@@ -181,18 +182,12 @@ export function isSuccessResponse(response: ApiResponse): response is ApiRespons
 // ================================
 
 // Type for Express response (you can import this from express if available)
-interface ExpressResponse {
-  status(code: number): ExpressResponse;
-  json(body: any): ExpressResponse;
-  set(field: string, value: string): ExpressResponse;
-  set(headers: Record<string, string>): ExpressResponse;
-}
 
-// Helper function to send Express response
-function sendExpressResponse<T>(res: ExpressResponse, apiResponse: ApiResponse<T>): ExpressResponse {
+function sendExpressResponse<T>(res: Response, apiResponse: ApiResponse<T>): Response {
   if (apiResponse.headers) {
     res.set(apiResponse.headers);
   }
+
   return res.status(apiResponse.status).json(apiResponse.body);
 }
 
@@ -200,19 +195,19 @@ function sendExpressResponse<T>(res: ExpressResponse, apiResponse: ApiResponse<T
 // EXPRESS SUCCESS RESPONSES
 // ================================
 
-export function sendOk<T>(res: ExpressResponse, data: T, message?: string): ExpressResponse {
+export function sendOk<T>(res: Response, data: T, message?: string): Response {
   return sendExpressResponse(res, ok(data, message));
 }
 
-export function sendCreated<T>(res: ExpressResponse, data: T, message?: string): ExpressResponse {
+export function sendCreated<T>(res: Response, data: T, message?: string): Response {
   return sendExpressResponse(res, created(data, message));
 }
 
-export function sendAccepted<T>(res: ExpressResponse, data: T, message?: string): ExpressResponse {
+export function sendAccepted<T>(res: Response, data: T, message?: string): Response {
   return sendExpressResponse(res, accepted(data, message));
 }
 
-export function sendNoContent(res: ExpressResponse): ExpressResponse {
+export function sendNoContent(res: Response): Response {
   return sendExpressResponse(res, noContent());
 }
 
@@ -220,60 +215,55 @@ export function sendNoContent(res: ExpressResponse): ExpressResponse {
 // EXPRESS ERROR RESPONSES
 // ================================
 
-export function sendBadRequest(res: ExpressResponse, message: string = "Bad Request", details?: any, path?: string): ExpressResponse {
+export function sendBadRequest(res: Response, message: string = "Bad Request", details?: any, path?: string): Response {
   return sendExpressResponse(res, badRequest(message, details, path));
 }
 
-export function sendUnauthorized(res: ExpressResponse, message: string = "Authentication required", details?: any, path?: string): ExpressResponse {
+export function sendUnauthorized(res: Response, message: string = "Authentication required", details?: any, path?: string): Response {
   return sendExpressResponse(res, unauthorized(message, details, path));
 }
 
-export function sendForbidden(res: ExpressResponse, message: string = "Access forbidden", details?: any, path?: string): ExpressResponse {
+export function sendForbidden(res: Response, message: string = "Access forbidden", details?: any, path?: string): Response {
   return sendExpressResponse(res, forbidden(message, details, path));
 }
 
-export function sendNotFound(res: ExpressResponse, message: string = "Resource not found", details?: any, path?: string): ExpressResponse {
+export function sendNotFound(res: Response, message: string = "Resource not found", details?: any, path?: string): Response {
   return sendExpressResponse(res, notFound(message, details, path));
 }
 
-export function sendMethodNotAllowed(res: ExpressResponse, message: string = "Method not allowed", allowedMethods?: string[], path?: string): ExpressResponse {
+export function sendMethodNotAllowed(res: Response, message: string = "Method not allowed", allowedMethods?: string[], path?: string): Response {
   return sendExpressResponse(res, methodNotAllowed(message, allowedMethods, path));
 }
 
-export function sendConflict(res: ExpressResponse, message: string = "Resource conflict", details?: any, path?: string): ExpressResponse {
+export function sendConflict(res: Response, message: string = "Resource conflict", details?: any, path?: string): Response {
   return sendExpressResponse(res, conflict(message, details, path));
 }
 
-export function sendUnprocessableEntity(res: ExpressResponse, message: string = "Validation failed", details?: any, path?: string): ExpressResponse {
+export function sendUnprocessableEntity(res: Response, message: string = "Validation failed", details?: any, path?: string): Response {
   return sendExpressResponse(res, unprocessableEntity(message, details, path));
 }
 
-export function sendTooManyRequests(res: ExpressResponse, message: string = "Too many requests", retryAfter?: number, path?: string): ExpressResponse {
+export function sendTooManyRequests(res: Response, message: string = "Too many requests", retryAfter?: number, path?: string): Response {
   return sendExpressResponse(res, tooManyRequests(message, retryAfter, path));
 }
 
-export function sendInternalServerError(res: ExpressResponse, message: string = "An unexpected error occurred", details?: any, path?: string): ExpressResponse {
+export function sendInternalServerError(res: Response, message: string = "An unexpected error occurred", details?: any, path?: string): Response {
   return sendExpressResponse(res, internalServerError(message, details, path));
 }
 
-export function sendNotImplemented(res: ExpressResponse, message: string = "Feature not implemented", details?: any, path?: string): ExpressResponse {
+export function sendNotImplemented(res: Response, message: string = "Feature not implemented", details?: any, path?: string): Response {
   return sendExpressResponse(res, notImplemented(message, details, path));
 }
 
-export function sendBadGateway(res: ExpressResponse, message: string = "Bad gateway", details?: any, path?: string): ExpressResponse {
+export function sendBadGateway(res: Response, message: string = "Bad gateway", details?: any, path?: string): Response {
   return sendExpressResponse(res, badGateway(message, details, path));
 }
 
-export function sendServiceUnavailable(
-  res: ExpressResponse,
-  message: string = "Service temporarily unavailable",
-  retryAfter?: number,
-  path?: string
-): ExpressResponse {
+export function sendServiceUnavailable(res: Response, message: string = "Service temporarily unavailable", retryAfter?: number, path?: string): Response {
   return sendExpressResponse(res, serviceUnavailable(message, retryAfter, path));
 }
 
-export function sendGatewayTimeout(res: ExpressResponse, message: string = "Gateway timeout", details?: any, path?: string): ExpressResponse {
+export function sendGatewayTimeout(res: Response, message: string = "Gateway timeout", details?: any, path?: string): Response {
   return sendExpressResponse(res, gatewayTimeout(message, details, path));
 }
 
@@ -281,12 +271,12 @@ export function sendGatewayTimeout(res: ExpressResponse, message: string = "Gate
 // EXPRESS UTILITY FUNCTIONS
 // ================================
 
-export function sendCustomResponse<T>(res: ExpressResponse, status: number, body: T, headers?: Record<string, string>): ExpressResponse {
+export function sendCustomResponse<T>(res: Response, status: number, body: T, headers?: Record<string, string>): Response {
   return sendExpressResponse(res, customResponse(status, body, headers));
 }
 
 // Generic error handler that matches your pattern
-export function sendErrorResponse(res: ExpressResponse, status: number, message: string, error: unknown): ExpressResponse {
+export function sendErrorResponse(res: Response, status: number, message: string, error: unknown): Response {
   const errorMessage = error instanceof Error ? error.message : "Error desconocido";
 
   return res.status(status).json({
@@ -294,34 +284,3 @@ export function sendErrorResponse(res: ExpressResponse, status: number, message:
     error: errorMessage,
   });
 }
-
-// ================================
-// EXAMPLE USAGE
-// ================================
-
-/*
-// Using the new Express functions:
-
-// Success responses
-sendOk(res, { id: 1, name: 'John Doe' }, 'User retrieved successfully');
-sendCreated(res, { id: 2, name: 'Jane Doe' });
-sendNoContent(res);
-
-// Error responses
-sendBadRequest(res, 'Invalid email format', { field: 'email' });
-sendUnauthorized(res, 'Invalid token');
-sendNotFound(res, 'User not found', { userId: 123 });
-sendInternalServerError(res, 'Database connection failed', { error: 'ECONNREFUSED' });
-
-// Your specific LinkedIn auth error example:
-sendLinkedInAuthError(res, error);
-// or with custom message:
-sendLinkedInAuthError(res, error, "Custom LinkedIn error message");
-
-// Generic error with your exact pattern:
-sendErrorResponse(res, 500, "Error durante la autenticación de LinkedIn", error);
-
-// Original functions still available for non-Express usage:
-const userResponse = ok({ id: 1, name: 'John Doe' }, 'User retrieved successfully');
-const validation = badRequest('Invalid email format', { field: 'email' });
-*/

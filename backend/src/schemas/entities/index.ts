@@ -1,4 +1,6 @@
 export * from './ai-settings';
+export * from './bot-post/ai-tone';
+export * from './bot-post/bot-post';
 export * from './company';
 export * from './engagement-data';
 export * from './oauth/linkedin-profile';
@@ -7,3 +9,6 @@ export * from './publication';
 export * from './social-account';
 export * from './team';
 export * from './user';
+export * from './whatsapp/message-to-send';
+export * from './whatsapp/webhook-verifycation';
+export * from './whatsapp/whatsapp-webhook-payload';

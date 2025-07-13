@@ -14,7 +14,7 @@ export const config = {
 
   // WhatsApp
   whatsapp: {
-    token: envs.FACEBOOK_ACCESS_TOKEN, // Usando el token de Facebook/WhatsApp
+    facebookAccessToken: envs.FACEBOOK_ACCESS_TOKEN, // Usando el token de Facebook/WhatsApp
     phoneNumberId: envs.WHATSAPP_PHONE_NUMBER_ID,
     webhookVerifyToken: envs.WHTASAPP_WEBHOOK_VERIFICATION_TOKEN,
     webhookSecret: '', // No está en env-vars
