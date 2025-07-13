@@ -17,7 +17,7 @@ Bot_ia es un sistema completo de gestión de redes sociales diseñado para empre
 ### Backend
 - **Node.js** con TypeScript
 - **Express.js** como framework
-- **Supabase** como base de datos
+- **MongoDB** con Mongoose como base de datos
 - **JWT** para autenticación
 
 ## 👥 Roles de Usuario
@@ -102,9 +102,9 @@ npm install
 4. **Configurar variables de entorno**
 ```bash
 # En backend/.env
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+DATABASE_URL=mongodb://localhost:27017/whatsapp_bot
 JWT_SECRET=your_jwt_secret
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 5. **Ejecutar el proyecto**
@@ -205,7 +205,8 @@ Bot_ia/
 - **Node.js**: Runtime de JavaScript
 - **Express.js**: Framework web
 - **TypeScript**: Tipado estático
-- **Supabase**: Base de datos y autenticación
+- **MongoDB**: Base de datos NoSQL
+- **Mongoose**: ODM para MongoDB
 - **JWT**: Tokens de autenticación
 - **Cors**: Middleware CORS
 - **Helmet**: Seguridad

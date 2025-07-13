@@ -21,12 +21,14 @@
     "exactOptionalPropertyTypes": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/types/*": ["./src/types/*"],
-      "@/services/*": ["./src/services/*"],
-      "@/utils/*": ["./src/utils/*"]
-    }
+    // "paths": {
+    //   "@/*": ["./src/*"],
+    //   "@/types/*": ["./src/schemas/types/*"],
+    //   "@/entities/*": ["./src/schemas/entities/*"],
+    //   "@/services/*": ["./src/services/*"],
+    //   "@/utils/*": ["./src/utils/*"],
+    //   "@/middlewares/*": ["./src/middlewares/*"]
+    // }
   },
   "include": [
     "src/**/*"

@@ -26,5 +26,8 @@
     "concurrently": "^8.2.2"
   },
   "author": "Tu Nombre",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "env-var": "^7.5.0"
+  }
 }

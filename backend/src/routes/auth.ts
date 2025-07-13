@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config';
-import { supabase } from '../services/supabase';
 import { logger } from '../utils/logger';
-import { createError } from '../middleware/error-handler';
-import { strictRateLimit } from '../middleware/rate-limit';
+import { createError } from '../middlewares/error-handler';
+import { strictRateLimit } from '../middlewares/rate-limit';
+import UserService from '../services/UserService';
+import CompanyService from '../services/CompanyService';
 
 const router = Router();
 
@@ -19,13 +20,9 @@ router.post('/login', strictRateLimit, async (req: Request, res: Response) => {
     }
 
     // Buscar usuario
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, password_hash, company_id, role, is_active')
-      .eq('email', email.toLowerCase())
-      .single();
-
-    if (error || !user) {
+    const user = await UserService.findByEmail(email.toLowerCase());
+    
+    if (!user) {
       throw createError('Credenciales inválidas', 401);
     }
 
@@ -40,16 +37,16 @@ router.post('/login', strictRateLimit, async (req: Request, res: Response) => {
     }
 
     // Generar JWT
-    const token = jwt.sign(
-      { 
-        userId: user.id,
-        email: user.email,
-        companyId: user.company_id,
-        role: user.role,
-      },
-      config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
-    );
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      companyId: user.company_id,
+      role: user.role,
+    };
+    
+    const token = jwt.sign(payload, config.jwt.secret, {
+      expiresIn: '7d', // Use a literal string instead of config
+    });
 
     logger.info(`Usuario autenticado: ${user.email}`);
 
@@ -86,11 +83,7 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Verificar si el email ya existe
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .single();
+    const existingUser = await UserService.findByEmail(email.toLowerCase());
 
     if (existingUser) {
       throw createError('El email ya está registrado', 409);
@@ -101,57 +94,42 @@ router.post('/register', async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // Crear empresa primero
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .insert({
-        name: companyName,
-        is_active: true,
-      })
-      .select()
-      .single();
+    const company = await CompanyService.create({
+      name: companyName,
+      is_active: true,
+    });
 
-    if (companyError || !company) {
-      throw createError('Error al crear la empresa', 500);
-    }
-
-    // Crear usuario branch_manager (anteriormente admin)
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .insert({
+    try {
+      // Crear usuario branch_manager (anteriormente admin)
+      const user = await UserService.create({
         email: email.toLowerCase(),
         password_hash: passwordHash,
         name,
-        phone: phone || null,
+        phone: phone || undefined,
         company_id: company.id,
         role: 'branch_manager',
         is_active: true,
-      })
-      .select('id, email, company_id, role')
-      .single();
+      });
 
-    if (userError || !user) {
+      // Actualizar la empresa con el branch_manager_id
+      await CompanyService.update(company.id, { branch_manager_id: user.id });
+
+      logger.info(`Nueva empresa registrada: ${companyName} por ${email}`);
+
+      res.status(201).json({
+        message: 'Empresa y usuario creados exitosamente',
+        user: {
+          id: user.id,
+          email: user.email,
+          companyId: user.company_id,
+          role: user.role,
+        },
+      });
+    } catch (userError) {
       // Rollback: eliminar empresa si falla la creación del usuario
-      await supabase.from('companies').delete().eq('id', company.id);
-      throw createError('Error al crear el usuario', 500);
+      await CompanyService.delete(company.id);
+      throw userError;
     }
-
-    // Actualizar la empresa con el branch_manager_id
-    await supabase
-      .from('companies')
-      .update({ branch_manager_id: user.id })
-      .eq('id', company.id);
-
-    logger.info(`Nueva empresa registrada: ${companyName} por ${email}`);
-
-    res.status(201).json({
-      message: 'Empresa y usuario creados exitosamente',
-      user: {
-        id: user.id,
-        email: user.email,
-        companyId: user.company_id,
-        role: user.role,
-      },
-    });
   } catch (error: any) {
     logger.error('Error en registro:', error);
     res.status(error.statusCode || 500).json({ 
@@ -175,22 +153,14 @@ router.post('/create-super-admin', async (req: Request, res: Response) => {
     }
 
     // Verificar si ya existe un super admin
-    const { data: existingSuperAdmin } = await supabase
-      .from('users')
-      .select('id')
-      .eq('role', 'super_admin')
-      .single();
+    const existingSuperAdmin = await UserService.findByRole('super_admin');
 
     if (existingSuperAdmin) {
       throw createError('Ya existe un Super Admin en el sistema', 409);
     }
 
     // Verificar si el email ya existe
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .single();
+    const existingUser = await UserService.findByEmail(email.toLowerCase());
 
     if (existingUser) {
       throw createError('El email ya está registrado', 409);
@@ -201,53 +171,41 @@ router.post('/create-super-admin', async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // Crear empresa matriz para Super Admin
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .insert({
-        name: 'Empresa Matriz',
-        description: 'Empresa matriz para Super Admin',
-        is_active: true,
-      })
-      .select()
-      .single();
+    const company = await CompanyService.create({
+      name: 'Empresa Matriz',
+      description: 'Empresa matriz para Super Admin',
+      is_active: true,
+    });
 
-    if (companyError || !company) {
-      throw createError('Error al crear la empresa matriz', 500);
-    }
-
-    // Crear usuario super_admin
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .insert({
+    try {
+      // Crear usuario super_admin
+      const user = await UserService.create({
         email: email.toLowerCase(),
         password_hash: passwordHash,
         name,
-        phone: phone || null,
+        phone: phone || undefined,
         company_id: company.id,
         role: 'super_admin',
         is_active: true,
-      })
-      .select('id, email, company_id, role')
-      .single();
+      });
 
-    if (userError || !user) {
+      logger.info(`Super Admin creado: ${email}`);
+
+      res.status(201).json({
+        message: 'Super Admin creado exitosamente',
+        user: {
+          id: user.id,
+          email: user.email,
+          companyId: user.company_id,
+          role: user.role,
+        },
+      });
+    } catch (userError) {
       // Rollback: eliminar empresa si falla la creación del usuario
-      await supabase.from('companies').delete().eq('id', company.id);
-      throw createError('Error al crear el Super Admin', 500);
+      await CompanyService.delete(company.id);
+      throw userError;
     }
-
-    logger.info(`Super Admin creado: ${email}`);
-
-    res.status(201).json({
-      message: 'Super Admin creado exitosamente',
-      user: {
-        id: user.id,
-        email: user.email,
-        companyId: user.company_id,
-        role: user.role,
-      },
-    });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Error creando Super Admin:', error);
     res.status(error.statusCode || 500).json({ 
       error: error.message || 'Error creando Super Admin' 

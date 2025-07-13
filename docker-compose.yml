@@ -1,17 +1,17 @@
 version: '3.8'
 
 services:
-  # PostgreSQL (si no usas Supabase cloud)
-  postgres:
-    image: postgres:15-alpine
+  # MongoDB database
+  mongodb:
+    image: mongo:6.0
     environment:
-      POSTGRES_DB: whatsapp_bot
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: whatsapp_bot
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mongodb_data:/data/db
 
   # Redis para Queue
   redis:
@@ -53,5 +53,5 @@ services:
     command: npm run dev
 
 volumes:
-  postgres_data:
+  mongodb_data:
   redis_data: 
