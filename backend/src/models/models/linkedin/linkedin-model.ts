@@ -1,43 +1,63 @@
 import axios from "axios";
 import { LinkedInProfile, OAuthProfile } from "../../../schemas/entities";
 import { fail, isFailure, logger, success, Result } from "../../../utils";
-import { OAuthOf, ILinkedInModel, LinkedInConfig } from "../..";
+import { OAuthOf, ILinkedInModel, LinkedInConfig, IUserModel, UserModel, LinkedInCopy } from "../..";
+import { decodeState } from "../../../utils/oauth-payload-util";
 
 export class LinkedInModel implements ILinkedInModel {
+  private readonly userModel: IUserModel = new UserModel();
+
+
   async authenticate({ config }: OAuthOf<LinkedInConfig>): Promise<Result<OAuthProfile<LinkedInProfile>, string>> {
     const accessTokenResult = await this.getAccesToken(config.code);
 
     if (isFailure(accessTokenResult)) return accessTokenResult;
     const profileResult = await this.getProfile(accessTokenResult.data);
+
+    if (isFailure(profileResult)) return profileResult;
+
+    const payload = decodeState(config.state);
+
+    if(!payload) {
+      return fail("Invalid state payload", "Error decoding state");
+    }
+
+    this.userModel.saveOrUpdateUser({phone: payload.phone, linkedinProfile: profileResult.data, linkedinAccessToken: accessTokenResult.data});
+
     return profileResult;
   }
 
-  async publicCopy(): Promise<Result<any, string>> {
-    // const access =
-    //   "AQVuB6g3w0XTHTrI87C8KxAJxV61sqKyI5DNzRMuGpkIQJ7470YJFnbY8FDOGx0Kns20s6ZmQV0PALyG8-uea7zEFQaDdJ8PyuaCwkG6EZETHpxpTH8D0jn_CAQxTE5aeu-kUsIM4hf0SoUL-aQxSK7dqOgRRLAV0P80D1co3I8W9CpcgEnwkWvvymDJv6RcNhxXeuHwWgfgcWcEf-Ak-fr4gcftustF2gdj9mwomn0Lajjjugo5Y6TY3gxBwjEs4n-sKQ4Y9NjYqxQ3mho8fPwEsBI96lyltSeKfRGd3JBGkWKv-kHq8Uxt3fO1HGSXtNMyuQkHls-UCdFtj60QvwcOpQU7pA";
+  async publicCopy(copy: LinkedInCopy): Promise<Result<any, string>> {
+
+    const { userPhone, text, author, visibility, feedDistribution, targetEntities, thirdPartyDistributionChannels, lifecycleState, isReshareDisabledByAuthor } = copy;
+    const user = await this.userModel.findByPhone(userPhone);
+
+    if(!user) {
+      return fail("User not found", "Error fetching user for LinkedIn post");
+    }
+
+    const linkedInProfile = user.linkedinProfile;
+
+   
     logger.info("Publicando en LinkedIn...");
     try {
       const postBody = {
-        author: "urn:li:person:yTMUGolJhZ", // Cambiar a "author" en lugar de "owner"
-        commentary: "¡Hola, este es mi primer post automático en LinkedIn desde mi app!",
-        visibility: "PUBLIC",
+        author: author ? `${author}:${linkedInProfile?.sub}` : `urn:li:person:${linkedInProfile?.sub}`,
+        commentary: text,
+        visibility: visibility ?? "PUBLIC",
         distribution: {
-          feedDistribution: "MAIN_FEED",
-          targetEntities: [],
-          thirdPartyDistributionChannels: [],
+          feedDistribution: feedDistribution ?? "MAIN_FEED",
+          targetEntities: targetEntities ?? [],
+          thirdPartyDistributionChannels: thirdPartyDistributionChannels ?? [],
         },
-        lifecycleState: "PUBLISHED",
-        isReshareDisabledByAuthor: false,
+        lifecycleState: lifecycleState ?? "PUBLISHED",
+        isReshareDisabledByAuthor: isReshareDisabledByAuthor ?? false,
       };
 
-      const access =
-        "AQVuB6g3w0XTHTrI87C8KxAJxV61sqKyI5DNzRMuGpkIQJ7470YJFnbY8FDOGx0Kns20s6ZmQV0PALyG8-uea7zEFQaDdJ8PyuaCwkG6EZETHpxpTH8D0jn_CAQxTE5aeu-kUsIM4hf0SoUL-aQxSK7dqOgRRLAV0P80D1co3I8W9CpcgEnwkWvvymDJv6RcNhxXeuHwWgfgcWcEf-Ak-fr4gcftustF2gdj9mwomn0Lajjjugo5Y6TY3gxBwjEs4n-sKQ4Y9NjYqxQ3mho8fPwEsBI96lyltSeKfRGd3JBGkWKv-kHq8Uxt3fO1HGSXtNMyuQkHls-UCdFtj60QvwcOpQU7pA";
-
-      // Usar el endpoint correcto
       const response = await axios.post("https://api.linkedin.com/rest/posts", postBody, {
         headers: {
-          Authorization: `Bearer ${access}`,
-          "LinkedIn-Version": "202410", // Versión requerida
+          Authorization: `Bearer ${user.linkedinAccessToken}`,
+          "LinkedIn-Version": "202410",
           "X-Restli-Protocol-Version": "2.0.0",
           "Content-Type": "application/json",
         },
@@ -66,7 +86,6 @@ export class LinkedInModel implements ILinkedInModel {
         },
       });
       const accessToken = tokenResponse.data.access_token;
-      logger.info(`✅ ACCESS TOKEN: ${accessToken}`);
       return success<string>(accessToken);
     } catch (error: any) {
       return fail(error.response?.data || error.message, "Error al obtener el token de acceso de LinkedIn");
@@ -82,7 +101,6 @@ export class LinkedInModel implements ILinkedInModel {
       });
 
       const profile: OAuthProfile<LinkedInProfile> = profileResponse.data;
-      logger.info("✅ USER PROFILE:", profile);
       return success<OAuthProfile<LinkedInProfile>>(profile);
     } catch (error: any) {
       return fail(error.response?.data || error.message, "Error al obtener el perfil de LinkedIn");

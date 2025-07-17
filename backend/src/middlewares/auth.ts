@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { logger } from '../utils/logger';
-import UserService from '../services/UserService';
+import { UserModel } from '../models';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -12,6 +12,8 @@ export interface AuthenticatedRequest extends Request {
     role: string;
   };
 }
+
+const userModel = new UserModel(); // Assuming UserModel is imported from the correct path
 
 export const authenticateToken = async (
   req: AuthenticatedRequest,
@@ -30,7 +32,7 @@ export const authenticateToken = async (
     const decoded = jwt.verify(token, config.jwt.secret as string) as any;
     
     // Verificar que el usuario existe en la base de datos
-    const user = await UserService.findById(decoded.userId);
+    const user = await userModel.findById(decoded.userId);
 
     if (!user) {
       res.status(401).json({ error: 'Token inválido' });

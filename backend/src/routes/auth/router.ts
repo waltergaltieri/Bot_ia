@@ -5,10 +5,12 @@ import { config } from '../../config';
 import { logger } from '../../utils/logger';
 import { createError } from '../../middlewares/error-handler';
 import { strictRateLimit } from '../../middlewares/rate-limit';
-import UserService from '../../services/UserService';
 import CompanyService from '../../services/CompanyService';
+import { UserModel } from '../../models';
 
 const router = Router();
+
+const userModel = new UserModel();
 
 // Login
 router.post('/login', strictRateLimit, async (req: Request, res: Response) => {
@@ -20,7 +22,7 @@ router.post('/login', strictRateLimit, async (req: Request, res: Response) => {
     }
 
     // Buscar usuario
-    const user = await UserService.findByEmail(email.toLowerCase());
+    const user = await userModel.findByEmail(email.toLowerCase());
     
     if (!user) {
       throw createError('Credenciales inválidas', 401);
@@ -83,7 +85,7 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Verificar si el email ya existe
-    const existingUser = await UserService.findByEmail(email.toLowerCase());
+    const existingUser = await userModel.findByEmail(email.toLowerCase());
 
     if (existingUser) {
       throw createError('El email ya está registrado', 409);
@@ -101,7 +103,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
     try {
       // Crear usuario branch_manager (anteriormente admin)
-      const user = await UserService.create({
+      const user = await userModel.create({
         email: email.toLowerCase(),
         password_hash: passwordHash,
         name,
@@ -153,14 +155,14 @@ router.post('/create-super-admin', async (req: Request, res: Response) => {
     }
 
     // Verificar si ya existe un super admin
-    const existingSuperAdmin = await UserService.findByRole('super_admin');
+    const existingSuperAdmin = await userModel.findByRole('super_admin');
 
     if (existingSuperAdmin) {
       throw createError('Ya existe un Super Admin en el sistema', 409);
     }
 
     // Verificar si el email ya existe
-    const existingUser = await UserService.findByEmail(email.toLowerCase());
+    const existingUser = await userModel.findByEmail(email.toLowerCase());
 
     if (existingUser) {
       throw createError('El email ya está registrado', 409);
@@ -179,7 +181,7 @@ router.post('/create-super-admin', async (req: Request, res: Response) => {
 
     try {
       // Crear usuario super_admin
-      const user = await UserService.create({
+      const user = await userModel.create({
         email: email.toLowerCase(),
         password_hash: passwordHash,
         name,

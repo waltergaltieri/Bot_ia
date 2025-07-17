@@ -36,6 +36,7 @@
   "exclude": [
     "node_modules",
     "dist",
-    "tests"
+    "tests",
+    "src/schemas/entities/user.ts"
   ]
 } 

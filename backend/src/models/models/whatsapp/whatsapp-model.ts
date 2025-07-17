@@ -1,13 +1,17 @@
 import axios from "axios";
 import { config } from "../../../config";
-import { MessageToSend, WebhookVerification, WhatsAppMessage, WhatsAppWebhookPayload } from "../../../schemas";
-import { fail, Result } from "../../../utils";
+import { MessageToSend, User, WebhookVerification, WhatsAppMessage, WhatsAppWebhookPayload } from "../../../schemas";
+import { fail, getLinkedInAuthUrl, Result } from "../../../utils";
 import { IWhatsAppModel } from "../../interfaces/i-whatsapp-model";
 import { SendWhatsAppMessageRequestDTO } from "../../../routes/whatsapp/DTOs/whatsapp.dto";
+import { UserScheme } from "../../../config/db";
+import { IUserModel, UserModel } from "../..";
 
 export class WhatsAppModel implements IWhatsAppModel {
   private readonly facebookBaseUrl: string = "https://graph.facebook.com/v18.0";
   private readonly whatsappPhoneNumberId = config.whatsapp.phoneNumberId;
+
+  private readonly userModel: IUserModel = new UserModel();
 
   private get whatsappApiUrl(): string {
     return `${this.facebookBaseUrl}/${this.whatsappPhoneNumberId}`;
@@ -15,7 +19,24 @@ export class WhatsAppModel implements IWhatsAppModel {
 
   async processIncomingMessage(whatsappMessage: WhatsAppMessage): Promise<Result<any, string>> {
     try {
-      const { type } = whatsappMessage;
+      const { type, from } = whatsappMessage;
+
+      if (await this.userModel.isNewUser(from)) {
+        const result = await this.userModel.saveOrUpdateUser({
+          phone: from,
+          role: "employee",
+        });
+
+        if (!result.success) {
+          return fail(`Failed to save new user: ${result.error}`);
+        }
+        const user: User = result.data;
+        await this.sendWelcomeMessage(from);
+
+        if (!user.linkedinProfile) {
+          await this.sendLinkedinAuthMessage(from);
+        }
+      }
 
       switch (type) {
         case "text":
@@ -137,6 +158,41 @@ export class WhatsAppModel implements IWhatsAppModel {
       return { success: true, data: "Message processed successfully" };
     } catch (error: any) {
       return fail(`Error processing text message: ${error?.message ?? String(error)}`);
+    }
+  }
+
+  private async sendWelcomeMessage(phone: string): Promise<void> {
+    const welcomeMessage = "¡Bienvenido al servicio de automatizacion de Postia!";
+    const messageToSend: SendWhatsAppMessageRequestDTO = {
+      message: welcomeMessage,
+      to: phone,
+    };
+
+    const result = await this.sendMessage({
+      to: messageToSend.to,
+      message: messageToSend.message,
+    });
+
+    if (!result.success) {
+      console.error(`Failed to send welcome message: ${result.error}`);
+    }
+  }
+
+  private async sendLinkedinAuthMessage(phone: string): Promise<void> {
+    const linkedinAuthUrl = getLinkedInAuthUrl(phone);
+    const linkedinAuthMessage = `Por favor, autentícate con LinkedIn para poder subir tus publicaciones.\n${linkedinAuthUrl}`;
+    const messageToSend: SendWhatsAppMessageRequestDTO = {
+      message: linkedinAuthMessage,
+      to: phone,
+    };
+
+    const result = await this.sendMessage({
+      to: messageToSend.to,
+      message: messageToSend.message,
+    });
+
+    if (!result.success) {
+      console.error(`Failed to send LinkedIn auth message: ${result.error}`);
     }
   }
 }

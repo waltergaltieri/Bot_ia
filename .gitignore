@@ -149,3 +149,6 @@ playwright/.cache/
 
 # Vite
 .vite/ 
+
+# MongoDB data
+backend/mongo/

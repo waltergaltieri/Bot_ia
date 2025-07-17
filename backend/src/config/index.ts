@@ -9,7 +9,10 @@ export const config = {
 
   // Database (placeholder for your database provider)
   database: {
-    url: 'mongodb://localhost:27017/whatsapp_bot', // No está en env-vars, valor por defecto
+    url: envs.MONGO_URL,
+    dbName: envs.MONGO_DB_NAME,
+    user: envs.MONGO_USER,
+    password: envs.MONGO_PASS,
   },
 
   // WhatsApp

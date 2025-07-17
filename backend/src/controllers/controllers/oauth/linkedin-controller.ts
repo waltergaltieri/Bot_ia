@@ -13,7 +13,7 @@ export class LinkedInController {
     try {
       logger.info("Iniciando autenticación de LinkedIn con método GET...");
 
-      const { code } = req.query;
+      const { code, state } = req.query;
       if (!code) {
         sendBadRequest(res, "Código de autenticación no proporcionado");
         return;
@@ -22,6 +22,7 @@ export class LinkedInController {
       const profileResult = await this.linkedInModel.authenticate({
         config: {
           code: code as string,
+          state: state as string,
         },
       });
 
