@@ -23,7 +23,7 @@ const LinkedInProfileSchema = new Schema<LinkedInProfile>(
   { _id: false }
 );
 
-const UserSchema = new Schema<User>({
+const User = new Schema<User>({
   email: { type: String, required: false, unique: true, default: null },
   name: { type: String, required: false, default: null },
   phone: { type: String, required: true },
@@ -44,4 +44,4 @@ const UserSchema = new Schema<User>({
   linkedinAccessToken: { type: String, required: false, default: null, name: "linkedin_access_token" },
 });
 
-export const UserScheme = mongoose.model<User>("User", UserSchema);
+export const UserScheme = mongoose.model<User>("User", User);

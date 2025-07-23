@@ -1,1 +1,2 @@
-export type PublicationStatus = 'pending' | 'approved' | 'published' | 'failed';
+
+export type PublicationStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";

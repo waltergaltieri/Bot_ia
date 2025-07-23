@@ -5,13 +5,14 @@ import { fail, getLinkedInAuthUrl, Result } from "../../../utils";
 import { IWhatsAppModel } from "../../interfaces/i-whatsapp-model";
 import { SendWhatsAppMessageRequestDTO } from "../../../routes/whatsapp/DTOs/whatsapp.dto";
 import { UserScheme } from "../../../config/db";
-import { IUserModel, UserModel } from "../..";
+import { IAModel, IIA, IUserModel, UserModel } from "../..";
 
 export class WhatsAppModel implements IWhatsAppModel {
   private readonly facebookBaseUrl: string = "https://graph.facebook.com/v18.0";
   private readonly whatsappPhoneNumberId = config.whatsapp.phoneNumberId;
 
   private readonly userModel: IUserModel = new UserModel();
+  private readonly analyzerIa: IIA = new IAModel();
 
   private get whatsappApiUrl(): string {
     return `${this.facebookBaseUrl}/${this.whatsappPhoneNumberId}`;
@@ -27,15 +28,12 @@ export class WhatsAppModel implements IWhatsAppModel {
           role: "employee",
         });
 
-        if (!result.success) {
-          return fail(`Failed to save new user: ${result.error}`);
-        }
+        if (!result.success) return fail(`Failed to save new user: ${result.error}`);
+
         const user: User = result.data;
         await this.sendWelcomeMessage(from);
 
-        if (!user.linkedinProfile) {
-          await this.sendLinkedinAuthMessage(from);
-        }
+        if (!user.linkedinProfile) await this.sendLinkedinAuthMessage(from);
       }
 
       switch (type) {
@@ -133,23 +131,19 @@ export class WhatsAppModel implements IWhatsAppModel {
   private async processTextMessage(whatsappMessage: WhatsAppMessage): Promise<Result<any, string>> {
     const { id, from, text } = whatsappMessage;
 
-    if (!text || !text.body) {
-      return fail("Received message does not contain text");
-    }
+    if (!text || !text.body) return fail("Received message does not contain text");
 
     try {
-      // Echo the received message back to the sender
+      const iaResponse = await this.analyzerIa.getResponse(text.body, from);
       const response = await this.sendMessage({
         to: from,
-        message: `Echo: ${text.body}`,
-        replyToMessageId: id,
+        message: iaResponse,
       });
 
       if (!response.success) {
         return fail(`Failed to send echo message: ${response.error}`);
       }
 
-      // Mark the incoming message as read
       const readResponse = await this.markMessageAsRead(id);
       if (!readResponse.success) {
         return fail(`Failed to mark message as read: ${readResponse.error}`);
