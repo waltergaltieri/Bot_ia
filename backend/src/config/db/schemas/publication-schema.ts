@@ -4,7 +4,8 @@ import { Publication } from "../../../schemas/entities";
 const Publication = new Schema<Publication>(
   {
     userId: { type: String, required: true },
-    content: { type: String, required: true },
+    originalMessage: { type: String, required: true },
+    proposedCopy: { type: String, required: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     status: { type: String, required: true, enum: ["DRAFT", "PUBLISHED", "ARCHIVED"] },

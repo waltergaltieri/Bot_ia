@@ -22,7 +22,9 @@ export class WhatsAppModel implements IWhatsAppModel {
     try {
       const { type, from } = whatsappMessage;
 
-      if (await this.userModel.isNewUser(from)) {
+      const isNewUser = await this.userModel.isNewUser(from);
+
+      if (isNewUser) {
         const result = await this.userModel.saveOrUpdateUser({
           phone: from,
           role: "employee",
@@ -34,14 +36,15 @@ export class WhatsAppModel implements IWhatsAppModel {
         await this.sendWelcomeMessage(from);
 
         if (!user.linkedinProfile) await this.sendLinkedinAuthMessage(from);
-      }
+        return { success: true, data: "New user registered and welcome message sent" };
+      } else {
+        switch (type) {
+          case "text":
+            return await this.processTextMessage(whatsappMessage);
 
-      switch (type) {
-        case "text":
-          return await this.processTextMessage(whatsappMessage);
-
-        default:
-          return fail(`Unsupported message type: ${type}`);
+          default:
+            return fail(`Unsupported message type: ${type}`);
+        }
       }
     } catch (error: any) {
       return fail(`Error processing incoming message: ${error?.message ?? String(error)}`);

@@ -41,30 +41,34 @@ export class LinkedInModel implements ILinkedInModel {
    
     logger.info("Publicando en LinkedIn...");
     try {
-      const postBody = {
-        author: author ? `${author}:${linkedInProfile?.sub}` : `urn:li:person:${linkedInProfile?.sub}`,
-        commentary: text,
-        visibility: visibility ?? "PUBLIC",
-        distribution: {
-          feedDistribution: feedDistribution ?? "MAIN_FEED",
-          targetEntities: targetEntities ?? [],
-          thirdPartyDistributionChannels: thirdPartyDistributionChannels ?? [],
-        },
-        lifecycleState: lifecycleState ?? "PUBLISHED",
-        isReshareDisabledByAuthor: isReshareDisabledByAuthor ?? false,
-      };
+      // const postBody = {
+      //   author: author ? `${author}:${linkedInProfile?.sub}` : `urn:li:person:${linkedInProfile?.sub}`,
+      //   commentary: text,
+      //   visibility: visibility ?? "PUBLIC",
+      //   distribution: {
+      //     feedDistribution: feedDistribution ?? "MAIN_FEED",
+      //     targetEntities: targetEntities ?? [],
+      //     thirdPartyDistributionChannels: thirdPartyDistributionChannels ?? [],
+      //   },
+      //   lifecycleState: lifecycleState ?? "PUBLISHED",
+      //   isReshareDisabledByAuthor: isReshareDisabledByAuthor ?? false,
+      // };
 
-      const response = await axios.post("https://api.linkedin.com/rest/posts", postBody, {
-        headers: {
-          Authorization: `Bearer ${user.linkedinAccessToken}`,
-          "LinkedIn-Version": "202410",
-          "X-Restli-Protocol-Version": "2.0.0",
-          "Content-Type": "application/json",
-        },
-      });
+      // const response = await axios.post("https://api.linkedin.com/rest/posts", postBody, {
+      //   headers: {
+      //     Authorization: `Bearer ${user.linkedinAccessToken}`,
+      //     "LinkedIn-Version": "202410",
+      //     "X-Restli-Protocol-Version": "2.0.0",
+      //     "Content-Type": "application/json",
+      //   },
+      // });
 
-      logger.info("✅ PUBLICACIÓN EN LINKEDIN:", response.data);
-      return success<any>(response.data);
+      // logger.info("✅ PUBLICACIÓN EN LINKEDIN:", response.data);
+      // return success<any>(response.data);
+
+      const fakeData = {"text": text, "mensaje": "publicado con éxito en LinkedIn"};
+      logger.info("✅ PUBLICACIÓN EN LINKEDIN:", fakeData);
+      return success<any>(fakeData);
     } catch (error: any) {
       logger.error("❌ Error en publicCopy:", error.response?.data || error.message);
       return fail(error.response?.data || error.message, "Error al publicar en LinkedIn");

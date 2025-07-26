@@ -21,9 +21,8 @@ import { createLinkedInRouter, createWhatsappWebhookRouter } from "./routes";
 import { LinkedInModel, TelegramModel, WhatsAppModel } from "./models";
 
 const app = express();
-
-app.set("trust-proxy", true);
-app.enable("trust proxy");
+// Confía en el primer proxy (Cloudflare Tunnel)
+app.set('trust proxy', 1);
 
 // Middleware de seguridad
 app.use(helmet());

@@ -12,9 +12,10 @@ export class PublicationModel implements IPublicationModel {
       const user = await this.userModel.findById(userId);
       if (!user) return fail("User not found");
 
-      const publication = await this.publicationSchema.create({
+      const publication: Publication = await this.publicationSchema.create({
         userId: user.id,
-        content: text,
+        originalMessage: text,
+        proposedCopy: text,
         status: "DRAFT",
         process: "IN_PROGRESS",
       });
@@ -27,9 +28,9 @@ export class PublicationModel implements IPublicationModel {
 
   async updatePublication(publicationId: string, content: string): Promise<Result<Publication, string>> {
     try {
-      const publication = await this.publicationSchema.findByIdAndUpdate(
+      const publication: Publication | null = await this.publicationSchema.findByIdAndUpdate(
         publicationId,
-        { content, status: "DRAFT" },
+        { proposedCopy: content, status: "DRAFT" },
         { new: true }
       );
 
@@ -45,7 +46,7 @@ export class PublicationModel implements IPublicationModel {
     try {
       const publication = await this.publicationSchema.findByIdAndUpdate(
         publicationId,
-        { process: "COMPLETED" },
+        { process: "COMPLETED", status: "PUBLISHED" },
         { new: true }
       );
 
