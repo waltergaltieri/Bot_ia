@@ -10,6 +10,7 @@ const Publication = new Schema<Publication>(
     updatedAt: { type: Date, default: Date.now },
     status: { type: String, required: true, enum: ["DRAFT", "PUBLISHED", "ARCHIVED"] },
     process: { type: String, required: true, enum: ["IN_PROGRESS", "COMPLETED", "CANCELLED"] },
+    images: { type: [String], required: false },
   }
 );
 

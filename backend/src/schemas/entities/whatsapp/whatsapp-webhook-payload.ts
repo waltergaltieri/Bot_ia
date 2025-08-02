@@ -40,6 +40,7 @@ export interface WhatsAppMessage {
   timestamp: string;
   text?: WhatsAppText;
   type: WhatsAppMessageType;
+  image?: WhatsAppImage
 }
 
 export interface WhatsAppText {
@@ -60,3 +61,9 @@ export type WhatsAppMessageType =
   | "template"
   | "reaction"
   | "unsupported";
+
+export interface WhatsAppImage {
+  mime_type: string;
+  id: string;
+  sha256: string;
+}

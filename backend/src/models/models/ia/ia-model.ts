@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { IIA } from "../../interfaces/i-ia";
+import { IIA, UserPrompt } from "../../interfaces/i-ia";
 import { config } from "../../../config";
 import { IUserModel } from "../../interfaces/i-user-model";
 import {
@@ -24,16 +24,18 @@ type AsyncChatCompletion = APIPromise<OpenAI.Chat.Completions.ChatCompletion>;
 type ChatCompletion = OpenAI.Chat.Completions.ChatCompletion;
 
 interface ProcessingContext {
-  userPrompt: string;
+  message: string;
   userId: string;
   botType: AssistantType;
   publication?: Publication | undefined;
+  type: "text" | "image";
 }
 
 interface PublicationHandlerParams {
   response: string;
   userId: string;
   prompt: string;
+  publication?: Publication | undefined;
 }
 
 interface ServiceResult<T = any> {
@@ -56,6 +58,8 @@ const SUCCESS_MESSAGES = {
   LINKEDIN_PUBLISHED: "Publicación completada exitosamente en LinkedIn.",
 } as const;
 
+const PUBLICATION_PLACEHOLDER = "PLACEHOLDER";
+
 export class IAModel implements IIA {
   private readonly openai: OpenAI;
   private readonly userModel: IUserModel;
@@ -69,19 +73,26 @@ export class IAModel implements IIA {
     this.linkedinModel = new LinkedInModel();
   }
 
-  async getResponse(userPrompt: string, userPhoneNumber: string): Promise<string> {
+  async getResponse({ message, phoneNumber, type }: UserPrompt): Promise<string> {
     try {
-      const publicationStatus = await this.checkPublicationStatus(userPhoneNumber);
+      const publicationStatus = await this.checkPublicationStatus(phoneNumber);
       if (!publicationStatus.success) return ERROR_MESSAGES.PUBLICATION_CHECK_FAILED;
 
       const { isNew, userId, publication } = publicationStatus.data as ConsultingPublicationStatus;
-      const botType: AssistantType = isNew ? "ANALYZER" : "COMMUNITY";
+
+      let isPlaceholder = false;
+      if (publication) {
+        isPlaceholder = publication.proposedCopy === PUBLICATION_PLACEHOLDER;
+      }
+
+      const botType: AssistantType = isNew || isPlaceholder ? "ANALYZER" : "COMMUNITY";
 
       const context: ProcessingContext = {
-        userPrompt,
+        message,
         userId,
         botType,
         publication,
+        type,
       };
 
       return await this.processWithContext(context);
@@ -101,8 +112,16 @@ export class IAModel implements IIA {
   }
 
   private async processWithContext(context: ProcessingContext): Promise<string> {
-    const iaBot = this.createAssistantBot(context.botType, context.userPrompt);
-    return await this.executeProcessing(iaBot, context);
+    const { botType, message, type, publication } = context;
+    switch (type) {
+      case "text":
+        const iaBot = this.createAssistantBot(botType, message);
+        return await this.executeProcessing(iaBot, context, publication);
+      case "image":
+        await this.attachImageToPublication(context);
+        return "";
+    }
+    return "Processing completed";
   }
 
   private createAssistantBot(assistantType: AssistantType, userPrompt: string): AsyncChatCompletion {
@@ -125,7 +144,11 @@ export class IAModel implements IIA {
     return factory();
   }
 
-  private async executeProcessing(iaBot: AsyncChatCompletion, context: ProcessingContext): Promise<string> {
+  private async executeProcessing(
+    iaBot: AsyncChatCompletion,
+    context: ProcessingContext,
+    publication?: Publication
+  ): Promise<string> {
     try {
       const botResponse = await iaBot;
 
@@ -156,7 +179,8 @@ export class IAModel implements IIA {
         return await this.handlePublication({
           response: toolCallResult.response,
           userId: context.userId,
-          prompt: context.userPrompt,
+          prompt: context.message,
+          publication: context.publication,
         });
       }
 
@@ -178,6 +202,7 @@ export class IAModel implements IIA {
       const linkedinCopy: LinkedInCopy = {
         userPhone: user.phone,
         text: publication.proposedCopy ?? "Mandarina",
+        attachments: publication.images ?? [],
       };
 
       const publishResult = await this.linkedinModel.publicCopy(linkedinCopy);
@@ -214,7 +239,7 @@ export class IAModel implements IIA {
   }
 
   private async handlePublication(params: PublicationHandlerParams): Promise<string> {
-    const { response, userId, prompt } = params;
+    const { response, userId, prompt, publication: existingPublication } = params;
 
     if (response !== "PUBLICAR") {
       const defaultBot = this.createAssistantBot("DEFAULT_AGENT", prompt);
@@ -224,16 +249,19 @@ export class IAModel implements IIA {
     }
 
     try {
-      const publicationResult = await this.publicationModel.startNewPublication(prompt, userId);
-      if (!publicationResult.success) return ERROR_MESSAGES.SERVICE_UNAVAILABLE;
+      let publication: Publication | undefined = existingPublication;
+      if (!publication) {
+        const publicationResult = await this.publicationModel.startNewPublication(prompt, userId);
+        if (!publicationResult.success) return ERROR_MESSAGES.SERVICE_UNAVAILABLE;
+        publication = publicationResult.data as Publication;
+      }
 
       const publisherBot = this.createAssistantBot("PUBLISHER", prompt);
       const publisherResponse = await this.executePublisherFlow(publisherBot, userId);
 
-      const publication = publicationResult.data as Publication;
       const { proposedCopy } = publisherResponse;
 
-      await this.publicationModel.updatePublication(publication.id, proposedCopy);
+      await this.publicationModel.updatePublication(publication.id, proposedCopy, publication.images);
 
       return this.formatPublisherResponse(publisherResponse);
     } catch (error) {
@@ -257,12 +285,12 @@ export class IAModel implements IIA {
 
   private async modifyPublication(publicationContext: ProcessingContext): Promise<string> {
     try {
-      const { publication: publicationToUpdate, userId, userPrompt } = publicationContext;
+      const { publication: publicationToUpdate, userId, message } = publicationContext;
       if (!publicationToUpdate) throw new Error("No publication to update.");
 
       const { id, proposedCopy: currentProposedCopy } = publicationToUpdate;
 
-      const prompt = `${currentProposedCopy ?? ""}\n\n${userPrompt}`;
+      const prompt = `${currentProposedCopy ?? ""}\n\n${message}`;
       const publisherBot = this.createAssistantBot("PUBLISHER", prompt);
       const publisherResponse = await this.executePublisherFlow(publisherBot, userId);
 
@@ -276,9 +304,15 @@ export class IAModel implements IIA {
     }
   }
 
-  // private async handleRandomPrompts(): Promise<string> {
-
-  // }
+  private async attachImageToPublication(context: ProcessingContext): Promise<void> {
+    const { publication, userId, message } = context;
+    if (!publication) {
+      await this.publicationModel.startNewPublication(PUBLICATION_PLACEHOLDER, userId, [message]);
+    } else {
+      const updatedImages = [...(publication.images || []), message];
+      await this.publicationModel.updatePublication(publication.id, publication.proposedCopy!, updatedImages);
+    }
+  }
 
   private async executePublisherFlow(publisherBot: AsyncChatCompletion, userId: string) {
     const botResponse = await publisherBot;

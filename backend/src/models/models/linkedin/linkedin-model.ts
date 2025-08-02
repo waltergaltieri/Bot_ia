@@ -7,7 +7,6 @@ import { decodeState } from "../../../utils/oauth-payload-util";
 export class LinkedInModel implements ILinkedInModel {
   private readonly userModel: IUserModel = new UserModel();
 
-
   async authenticate({ config }: OAuthOf<LinkedInConfig>): Promise<Result<OAuthProfile<LinkedInProfile>, string>> {
     const accessTokenResult = await this.getAccesToken(config.code);
 
@@ -18,29 +17,78 @@ export class LinkedInModel implements ILinkedInModel {
 
     const payload = decodeState(config.state);
 
-    if(!payload) {
+    if (!payload) {
       return fail("Invalid state payload", "Error decoding state");
     }
 
-    this.userModel.saveOrUpdateUser({phone: payload.phone, linkedinProfile: profileResult.data, linkedinAccessToken: accessTokenResult.data});
+    this.userModel.saveOrUpdateUser({
+      phone: payload.phone,
+      linkedinProfile: profileResult.data,
+      linkedinAccessToken: accessTokenResult.data,
+    });
 
     return profileResult;
   }
 
   async publicCopy(copy: LinkedInCopy): Promise<Result<any, string>> {
-
-    const { userPhone, text, author, visibility, feedDistribution, targetEntities, thirdPartyDistributionChannels, lifecycleState, isReshareDisabledByAuthor } = copy;
+    const {
+      userPhone,
+      text,
+      author,
+      visibility,
+      feedDistribution,
+      targetEntities,
+      thirdPartyDistributionChannels,
+      lifecycleState,
+      isReshareDisabledByAuthor,
+      attachments,
+    } = copy;
     const user = await this.userModel.findByPhone(userPhone);
 
-    if(!user) {
+    if (!user) {
       return fail("User not found", "Error fetching user for LinkedIn post");
     }
 
     const linkedInProfile = user.linkedinProfile;
 
-   
     logger.info("Publicando en LinkedIn...");
     try {
+      let content: any = {};
+
+      // if (attachments && attachments.length > 0) {
+      //   if (attachments.length === 1) {
+      //     const digitalMediaAsset = await this.uploadSingleImage(
+      //       attachments[0]!,
+      //       user.linkedinAccessToken!,
+      //       linkedInProfile?.sub!
+      //     );
+      //     if (digitalMediaAsset) {
+      //       content = {
+      //         media: {
+      //           id: digitalMediaAsset,
+      //           title: text.substring(0, 100) || "Imagen compartida",
+      //         },
+      //       };
+      //     }
+      //   } else if (attachments.length > 1) {
+      //     const digitalMediaAssets = await this.uploadMultipleImages(
+      //       attachments,
+      //       user.linkedinAccessToken!,
+      //       linkedInProfile?.sub!
+      //     );
+      //     if (digitalMediaAssets.length > 0) {
+      //       content = {
+      //         multiImage: {
+      //           images: digitalMediaAssets.map((digitalMediaAsset) => ({
+      //             id: digitalMediaAsset,
+      //             altText: "Imagen compartida",
+      //           })),
+      //         },
+      //       };
+      //     }
+      //   }
+      // }
+
       // const postBody = {
       //   author: author ? `${author}:${linkedInProfile?.sub}` : `urn:li:person:${linkedInProfile?.sub}`,
       //   commentary: text,
@@ -50,6 +98,7 @@ export class LinkedInModel implements ILinkedInModel {
       //     targetEntities: targetEntities ?? [],
       //     thirdPartyDistributionChannels: thirdPartyDistributionChannels ?? [],
       //   },
+      //   ...(Object.keys(content).length > 0 && { content }),
       //   lifecycleState: lifecycleState ?? "PUBLISHED",
       //   isReshareDisabledByAuthor: isReshareDisabledByAuthor ?? false,
       // };
@@ -63,12 +112,12 @@ export class LinkedInModel implements ILinkedInModel {
       //   },
       // });
 
-      // logger.info("✅ PUBLICACIÓN EN LINKEDIN:", response.data);
-      // return success<any>(response.data);
-
-      const fakeData = {"text": text, "mensaje": "publicado con éxito en LinkedIn"};
+      const fakeData = { text: text, mensaje: "publicado con éxito en LinkedIn" };
       logger.info("✅ PUBLICACIÓN EN LINKEDIN:", fakeData);
       return success<any>(fakeData);
+
+      // logger.info("✅ PUBLICACIÓN EN LINKEDIN:", response.data);
+      // return success<any>(response.data);
     } catch (error: any) {
       logger.error("❌ Error en publicCopy:", error.response?.data || error.message);
       return fail(error.response?.data || error.message, "Error al publicar en LinkedIn");
@@ -109,5 +158,60 @@ export class LinkedInModel implements ILinkedInModel {
     } catch (error: any) {
       return fail(error.response?.data || error.message, "Error al obtener el perfil de LinkedIn");
     }
+  }
+
+  private async uploadSingleImage(base64Image: string, accessToken: string, personId: string): Promise<string | null> {
+    try {
+      // Paso 1: Inicializar upload usando Images API (NO Assets API)
+      const initializeResponse = await axios.post(
+        "https://api.linkedin.com/rest/images?action=initializeUpload",
+        {
+          initializeUploadRequest: {
+            owner: `urn:li:person:${personId}`,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "LinkedIn-Version": "202410", // Importante: usar LinkedIn-Version
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const uploadUrl = initializeResponse.data.value.uploadUrl;
+      const imageUrn = initializeResponse.data.value.image; // Esto devuelve urn:li:image:xxx
+
+      // Paso 2: Subir la imagen
+      const imageBuffer = Buffer.from(base64Image, "base64");
+
+      await axios.put(uploadUrl, imageBuffer, {
+        // Usar PUT, no POST
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "image/jpeg",
+        },
+      });
+
+      logger.info(`✅ Imagen subida: ${imageUrn}`);
+      return imageUrn; // Esto devuelve urn:li:image:xxx (no digitalmediaAsset)
+    } catch (error: any) {
+      logger.error("❌ Error subiendo imagen:", error.response?.data || error.message);
+      return null;
+    }
+  }
+
+  private async uploadMultipleImages(attachments: string[], accessToken: string, personId: string): Promise<string[]> {
+    const digitalMediaAssets: string[] = [];
+
+    for (const base64Image of attachments) {
+      const digitalMediaAsset = await this.uploadSingleImage(base64Image, accessToken, personId);
+      if (digitalMediaAsset) {
+        digitalMediaAssets.push(digitalMediaAsset);
+      }
+    }
+
+    return digitalMediaAssets;
   }
 }

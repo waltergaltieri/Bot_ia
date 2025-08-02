@@ -10,4 +10,5 @@ export interface Publication {
     updatedAt: Date;
     status: PublicationStatus;
     process: PublicationProcess;
+    images?: string[];
 }

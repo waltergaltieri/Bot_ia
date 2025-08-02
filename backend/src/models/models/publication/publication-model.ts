@@ -7,7 +7,7 @@ export class PublicationModel implements IPublicationModel {
   private readonly publicationSchema = PublicationSchema;
   private readonly userModel: IUserModel = new UserModel();
 
-  async startNewPublication(text: string, userId: string): Promise<Result<any, string>> {
+  async startNewPublication(text: string, userId: string, images: string[] | undefined): Promise<Result<any, string>> {
     try {
       const user = await this.userModel.findById(userId);
       if (!user) return fail("User not found");
@@ -18,6 +18,7 @@ export class PublicationModel implements IPublicationModel {
         proposedCopy: text,
         status: "DRAFT",
         process: "IN_PROGRESS",
+        images: images || [],
       });
 
       return success(publication);
@@ -26,11 +27,11 @@ export class PublicationModel implements IPublicationModel {
     }
   }
 
-  async updatePublication(publicationId: string, content: string): Promise<Result<Publication, string>> {
+  async updatePublication(publicationId: string, content: string, images?: string[]): Promise<Result<Publication, string>> {
     try {
       const publication: Publication | null = await this.publicationSchema.findByIdAndUpdate(
         publicationId,
-        { proposedCopy: content, status: "DRAFT" },
+        { proposedCopy: content, status: "DRAFT", images: images || [] },
         { new: true }
       );
 

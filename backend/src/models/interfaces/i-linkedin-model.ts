@@ -16,6 +16,7 @@ export interface LinkedInCopy {
   thirdPartyDistributionChannels?: string[];
   lifecycleState?: "PUBLISHED" | "DRAFT";
   isReshareDisabledByAuthor?: boolean;
+  attachments?: string[];
 }
 
 export interface ILinkedInModel extends IOAuth<LinkedInConfig> {

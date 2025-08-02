@@ -5,7 +5,12 @@ export interface IAResponse<T> {
     result: T
 } 
 
+export interface UserPrompt {
+    message: string;
+    phoneNumber: string;
+    type: "text" | "image";
+}
 
 export interface IIA {
-    getResponse(userPromp: String, userPhoneNumber: String): Promise<string>;
- }
+    getResponse(userPrompt: UserPrompt): Promise<string>;
+}

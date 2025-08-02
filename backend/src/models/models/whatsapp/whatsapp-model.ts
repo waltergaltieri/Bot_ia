@@ -1,11 +1,20 @@
 import axios from "axios";
 import { config } from "../../../config";
-import { MessageToSend, User, WebhookVerification, WhatsAppMessage, WhatsAppWebhookPayload } from "../../../schemas";
+import {
+  MessageToSend,
+  User,
+  WebhookVerification,
+  WhatsAppImage,
+  WhatsAppMessage,
+  WhatsAppWebhookPayload,
+} from "../../../schemas";
 import { fail, getLinkedInAuthUrl, Result } from "../../../utils";
 import { IWhatsAppModel } from "../../interfaces/i-whatsapp-model";
 import { SendWhatsAppMessageRequestDTO } from "../../../routes/whatsapp/DTOs/whatsapp.dto";
 import { UserScheme } from "../../../config/db";
 import { IAModel, IIA, IUserModel, UserModel } from "../..";
+import { PublicationModel } from "../publication/publication-model";
+import { logger } from "env-var";
 
 export class WhatsAppModel implements IWhatsAppModel {
   private readonly facebookBaseUrl: string = "https://graph.facebook.com/v18.0";
@@ -13,6 +22,8 @@ export class WhatsAppModel implements IWhatsAppModel {
 
   private readonly userModel: IUserModel = new UserModel();
   private readonly analyzerIa: IIA = new IAModel();
+
+  private readonly PublicationModel: PublicationModel = new PublicationModel();
 
   private get whatsappApiUrl(): string {
     return `${this.facebookBaseUrl}/${this.whatsappPhoneNumberId}`;
@@ -42,11 +53,17 @@ export class WhatsAppModel implements IWhatsAppModel {
           case "text":
             return await this.processTextMessage(whatsappMessage);
 
+          case "image":
+            console.log("Processing image message");
+            return await this.processMessageWithImage(whatsappMessage);
+
           default:
+            console.warn(`Unsupported message type: ${type}`);
             return fail(`Unsupported message type: ${type}`);
         }
       }
     } catch (error: any) {
+      console.error("Error processing incoming message:", error);
       return fail(`Error processing incoming message: ${error?.message ?? String(error)}`);
     }
   }
@@ -137,7 +154,7 @@ export class WhatsAppModel implements IWhatsAppModel {
     if (!text || !text.body) return fail("Received message does not contain text");
 
     try {
-      const iaResponse = await this.analyzerIa.getResponse(text.body, from);
+      const iaResponse = await this.analyzerIa.getResponse({ message: text.body, phoneNumber: from, type: "text" });
       const response = await this.sendMessage({
         to: from,
         message: iaResponse,
@@ -156,6 +173,23 @@ export class WhatsAppModel implements IWhatsAppModel {
     } catch (error: any) {
       return fail(`Error processing text message: ${error?.message ?? String(error)}`);
     }
+  }
+
+  async processMessageWithImage(whatsappMessage: WhatsAppMessage): Promise<Result<any, string>> {
+    const { from, id, image } = whatsappMessage;
+    if (!image) return fail("Received message does not contain an image");
+
+    const base64Image = await this.downloadMedia(image);
+    if (!base64Image.success) {
+      return fail(`Failed to download image: ${base64Image.error}`);
+    }
+
+    const iaResponse = await this.analyzerIa.getResponse({
+      message: base64Image.data,
+      phoneNumber: from,
+      type: "image",
+    });
+    return { success: true, data: "Message with image processed successfully" };
   }
 
   private async sendWelcomeMessage(phone: string): Promise<void> {
@@ -190,6 +224,28 @@ export class WhatsAppModel implements IWhatsAppModel {
 
     if (!result.success) {
       console.error(`Failed to send LinkedIn auth message: ${result.error}`);
+    }
+  }
+
+  private async downloadMedia(image: WhatsAppImage): Promise<Result<string, string>> {
+    try {
+      const { id } = image;
+      const metaRes = await axios.get(`${this.facebookBaseUrl}/${id}`, {
+        headers: { Authorization: `Bearer ${config.whatsapp.facebookAccessToken}` },
+      });
+
+      const metaData = metaRes.data;
+
+      const imgRes = await axios.get(metaData.url, {
+        headers: { Authorization: `Bearer ${config.whatsapp.facebookAccessToken}` },
+        responseType: "arraybuffer",
+      });
+
+      const imageBuffer = Buffer.from(imgRes.data, "binary");
+      return { success: true, data: imageBuffer.toString("base64") };
+    } catch (error: any) {
+      console.error("❌ Error descargando imagen:", error.response?.data || error.message);
+      return fail("Error downloading media");
     }
   }
 }
